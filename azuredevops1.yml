@@ -1,0 +1,19 @@
+trigger:
+  - main
+
+pool: selfhosted
+
+stages:
+  - stage:
+      jobs:
+        - job:
+          steps: 
+            - task: Maven@3
+              Inputs: 
+                mavenPOMFile: 'pom.xml'
+                goals: 'package'
+                publishJUnitResults: true
+                testResultsFiles: '**/surefire-reports/TEST-*.xml'
+                javaHomeOption: 'JDKVersion'
+                jdkVersonOption: 'default'
+                jdkArchitectureOption: 'x64'
