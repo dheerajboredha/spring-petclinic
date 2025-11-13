@@ -1,0 +1,61 @@
+name: spring-petclinic
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      # Step 2: Set up Java
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Step 3: SonarCloud scan
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v3
+        with:
+          args: >
+            -Dsonar.projectKey=noporganisation_spring-petclinic
+            -Dsonar.organization=noporganisation
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+
+      # Step 4: Build and package with Maven
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
+
+      # Step 5: Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      # Step 6: Login to Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Step 7: Build and push Docker image
+      - name: Build and Push Docker image
+        env:
+          ECR_REGISTRY: aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 934556830987.dkr.ecr.ap-south-1.amazonaws.com
+          ECR_REPOSITORY: java/petclinic
+          IMAGE_TAG: latest
+        run: |
+          docker build -t java/spc .
+          docker tag java/spc:latest 934556830987.dkr.ecr.ap-south-1.amazonaws.com/java/spc:latest
+          docker push 934556830987.dkr.ecr.ap-south-1.amazonaws.com/java/spc:latest
